@@ -3,7 +3,7 @@
 Plugin name: Batcache Manager
 Plugin URI: http://wordpress.org/extend/plugins/batcache/
 Description: This optional plugin improves Batcache.
-Author: Andy Skelton
+Author: Andy Skelton | Forked by Roundhouse Designs
 Author URI: http://andyskelton.com/
 Version: 1.5
 */
