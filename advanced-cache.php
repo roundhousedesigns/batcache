@@ -319,8 +319,8 @@ class batcache {
 		if ( is_array( $dimensions ) ) {
 			ksort( $dimensions );
 			foreach ( $dimensions as $key => $function ) {
-				$fun              = function () use ($function) {
-					eval($function);
+				$fun = function () use ( $function ) {
+					eval( $function );
 				};
 				$value            = $fun();
 				$this->keys[$key] = $value;
@@ -405,6 +405,10 @@ if ( in_array(
 		'xmlrpc.php',
 		'wp-cron.php',
 	) ) ) {
+	return;
+}
+// Never batcache wp-admin
+if ( is_admin() ) {
 	return;
 }
 // Never batcache WP javascript generators
