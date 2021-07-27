@@ -1,8 +1,8 @@
 <?php
+
 if ( is_readable( dirname( __FILE__ ) . '/batcache-stats.php' ) ) {
 	require_once dirname( __FILE__ ) . '/batcache-stats.php';
 }
-
 if ( ! function_exists( 'batcache_stats' ) ) {
 	/**
 	 * Stats of some kind!
@@ -18,9 +18,7 @@ if ( ! function_exists( 'batcache_stats' ) ) {
 	 */
 	function batcache_stats( $name, $value, $num = 1, $today = FALSE, $hour = FALSE ) {}
 }
-
 // nananananananananananananananana BATCACHE!!!
-
 function batcache_cancel() {
 	global $batcache;
 
@@ -29,7 +27,6 @@ function batcache_cancel() {
 	}
 
 }
-
 // Variants can be set by functions which use early-set globals like $_SERVER to run simple tests.
 // Functions defined in WordPress, plugins, and themes are not available and MUST NOT be used.
 // Example: vary_cache_on_function('return preg_match("/feedburner/i", $_SERVER["HTTP_USER_AGENT"]);');
@@ -54,7 +51,6 @@ function vary_cache_on_function( $function ) {
 
 	$batcache->add_variant( $function );
 }
-
 class batcache {
 	// This is the base configuration. You can edit these variables or move them into your wp-config.php file.
 	var $max_age = 3600; // Expire batcache items aged this many seconds (zero to disable batcache)
@@ -323,7 +319,9 @@ class batcache {
 		if ( is_array( $dimensions ) ) {
 			ksort( $dimensions );
 			foreach ( $dimensions as $key => $function ) {
-				$fun              = create_function( '', $function );
+				$fun              = function () use ($function) {
+					eval($function);
+				};
 				$value            = $fun();
 				$this->keys[$key] = $value;
 			}
@@ -393,15 +391,12 @@ HTML;
 		ksort( $this->query );
 	}
 }
-
 global $batcache;
 // Pass in the global variable which may be an array of settings to override defaults.
 $batcache = new batcache( $batcache );
-
 if ( ! defined( 'WP_CONTENT_DIR' ) ) {
 	return;
 }
-
 // Never batcache interactive scripts or API endpoints.
 if ( in_array(
 	basename( $_SERVER['SCRIPT_FILENAME'] ),
@@ -412,23 +407,19 @@ if ( in_array(
 	) ) ) {
 	return;
 }
-
 // Never batcache WP javascript generators
 if ( strstr( $_SERVER['SCRIPT_FILENAME'], 'wp-includes/js' ) ) {
 	return;
 }
-
 // Only cache HEAD and GET requests.
 if (  ( isset( $_SERVER['REQUEST_METHOD'] ) && ! in_array( $_SERVER['REQUEST_METHOD'], array( 'GET', 'HEAD' ) ) ) ) {
 	return;
 }
-
 // Never batcache a request with X-WP-Nonce header.
 if ( ! empty( $_SERVER['HTTP_X_WP_NONCE'] ) ) {
 	batcache_stats( 'batcache', 'x_wp_nonce_skip' );
 	return;
 }
-
 // Never batcache when cookies indicate a cache-exempt visitor.
 if ( is_array( $_COOKIE ) && ! empty( $_COOKIE ) ) {
 	foreach ( array_keys( $_COOKIE ) as $batcache->cookie ) {
@@ -438,7 +429,6 @@ if ( is_array( $_COOKIE ) && ! empty( $_COOKIE ) ) {
 		}
 	}
 }
-
 // Never batcache a response for a request with an Origin request header.
 // *Unless* that Origin header is in the configured whitelist of allowed origins with restricted schemes and ports.
 if ( isset( $_SERVER['HTTP_ORIGIN'] ) ) {
@@ -449,56 +439,44 @@ if ( isset( $_SERVER['HTTP_ORIGIN'] ) ) {
 
 	$batcache->origin = $_SERVER['HTTP_ORIGIN'];
 }
-
 if ( ! include_once ( WP_CONTENT_DIR . '/object-cache.php' ) ) {
 	return;
 }
-
-wp_cache_init(); // Note: wp-settings.php calls wp_cache_init() which clobbers the object made here.
-
+wp_cache_init();
+// Note: wp-settings.php calls wp_cache_init() which clobbers the object made here.
 if ( ! is_object( $wp_object_cache ) ) {
 	return;
 }
-
 // Now that the defaults are set, you might want to use different settings under certain conditions.
-
 /* Example: if your documents have a mobile variant (a different document served by the same URL) you must tell batcache about the variance. Otherwise you might accidentally cache the mobile version and serve it to desktop users, or vice versa.
 $batcache->unique['mobile'] = is_mobile_user_agent();
  */
-
 /* Example: never batcache for this host
 if ( $_SERVER['HTTP_HOST'] == 'do-not-batcache-me.com' )
 return;
  */
-
 /* Example: batcache everything on this host regardless of traffic level
 if ( $_SERVER['HTTP_HOST'] == 'always-batcache-me.com' )
 return;
  */
-
 /* Example: If you sometimes serve variants dynamically (e.g. referrer search term highlighting) you probably don't want to batcache those variants. Remember this code is run very early in wp-settings.php so plugins are not yet loaded. You will get a fatal error if you try to call an undefined function. Either include your plugin now or define a test function in this file.
 if ( include_once( 'plugins/searchterm-highlighter.php') && referrer_has_search_terms() )
 return;
  */
-
 // Disabled
 if ( $batcache->max_age < 1 ) {
 	return;
 }
-
 // Make sure we can increment. If not, turn off the traffic sensor.
 if ( ! method_exists( $GLOBALS['wp_object_cache'], 'incr' ) ) {
 	$batcache->times = 0;
 }
-
 // Necessary to prevent clients using cached version after login cookies set. If this is a problem, comment it out and remove all Last-Modified headers.
 header( 'Vary: Cookie', false );
-
 // Things that define a unique page.
 if ( isset( $_SERVER['QUERY_STRING'] ) ) {
 	$batcache->set_query( $_SERVER['QUERY_STRING'] );
 }
-
 $batcache->keys = array(
 	'host'   => $_SERVER['HTTP_HOST'],
 	'method' => $_SERVER['REQUEST_METHOD'],
@@ -509,11 +487,9 @@ $batcache->keys = array(
 if ( isset( $batcache->origin ) ) {
 	$batcache->keys['origin'] = $batcache->origin;
 }
-
 if ( $batcache->is_ssl() ) {
 	$batcache->keys['ssl'] = true;
 }
-
 // Recreate the permalink from the URL
 $batcache->permalink = 'http://' . $batcache->keys['host'] . $batcache->keys['path'] . ( isset( $batcache->keys['query']['p'] ) ? "?p=" . $batcache->keys['query']['p'] : '' );
 $batcache->url_key   = md5( $batcache->permalink );
@@ -521,12 +497,10 @@ $batcache->configure_groups();
 $batcache->url_version = (int) wp_cache_get( "{$batcache->url_key}_version", $batcache->group );
 $batcache->do_variants();
 $batcache->generate_keys();
-
 // Get the batcache
 $batcache->cache = wp_cache_get( $batcache->key, $batcache->group );
 $is_cached       = is_array( $batcache->cache ) && isset( $batcache->cache['time'] );
 $has_expired     = $is_cached && time() > $batcache->cache['time'] + $batcache->cache['max_age'];
-
 if ( isset( $batcache->cache['version'] ) && $batcache->cache['version'] != $batcache->url_version ) {
 	// Always refresh the cache if a newer version is available.
 	$batcache->do = true;
@@ -550,12 +524,10 @@ if ( isset( $batcache->cache['version'] ) && $batcache->cache['version'] != $bat
 		}
 	}
 }
-
 // Obtain cache generation lock
 if ( $batcache->do ) {
 	$batcache->genlock = wp_cache_add( "{$batcache->url_key}_genlock", 1, $batcache->group, 10 );
 }
-
 if (
 	$is_cached && // We have cache
 	! $batcache->genlock && // We have not obtained cache regeneration lock
@@ -651,12 +623,10 @@ if (
 	// Have you ever heard a death rattle before?
 	die( $batcache->cache['output'] );
 }
-
 // Didn't meet the minimum condition?
 if ( ! $batcache->do || ! $batcache->genlock ) {
 	return;
 }
-
 //WordPress 4.7 changes how filters are hooked. Since WordPress 4.6 add_filter can be used in advanced-cache.php. Previous behaviour is kept for backwards compatability with WP < 4.6
 if ( function_exists( 'add_filter' ) ) {
 	add_filter( 'status_header', array( &$batcache, 'status_header' ), 10, 2 );
@@ -665,7 +635,5 @@ if ( function_exists( 'add_filter' ) ) {
 	$wp_filter['status_header'][10]['batcache']      = array( 'function' => array( &$batcache, 'status_header' ), 'accepted_args' => 2 );
 	$wp_filter['wp_redirect_status'][10]['batcache'] = array( 'function' => array( &$batcache, 'redirect_status' ), 'accepted_args' => 2 );
 }
-
 ob_start( array( &$batcache, 'ob' ) );
-
 // It is safer to omit the final PHP closing tag.
