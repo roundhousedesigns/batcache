@@ -7,6 +7,8 @@
  * and enters them into our internal stats.
  */
 
+ error_log('hiiii');
+
 if ( ! function_exists( 'batcache_stats' ) ) {
 	function batcache_stats( $name, $value, $num = 1, $today = FALSE, $hour = FALSE ) {
 		if ( ! $today ) {
