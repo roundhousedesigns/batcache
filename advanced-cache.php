@@ -161,9 +161,9 @@ class batcache {
 			$headers[$k] = array();
 			if ( isset( $headers1[$k] ) && isset( $headers2[$k] ) ) {
 				$headers[$k] = array_merge( (array) $headers2[$k], (array) $headers1[$k] );
-			} elseif ( isset( $headers2[$k] ) );
-			$headers[$k] = (array) $headers2[$k];
-			else{
+			} elseif ( isset( $headers2[$k] ) ) {
+				$headers[$k] = (array) $headers2[$k];
+			} else {
 				$headers[$k] = (array) $headers1[$k];
 			}
 
@@ -303,10 +303,7 @@ class batcache {
 		}
 
 		// Pass output to next ob handler
-		if ( function_exists( 'batcache_stats' ) ) {
-			batcache_stats( 'batcache', 'total_page_views' );
-		}
-		
+		batcache_stats( 'batcache', 'total_page_views' );
 		return $this->cache['output'];
 	}
 
@@ -483,11 +480,6 @@ return;
 if ( include_once( 'plugins/searchterm-highlighter.php') && referrer_has_search_terms() )
 return;
  */
-
-// If wp-admin
-if ( is_admin() ) {
-	return;
-}
 
 // Disabled
 if ( $batcache->max_age < 1 ) {
